@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "label": "제주 154 kV · ASCC/TW 430 · 개발 예제",
+  "conductor": {
+    "name": "ASCC/TW 430 mm² (일진전기 카탈로그 기반 예제)",
+    "diameter_m": 0.02514,
+    "aluminum_area_mm2": 425.7,
+    "core_area_mm2": 51.9,
+    "core_diameter_m": 0.00813,
+    "mass_kg_m": 1.273,
+    "minimum_breaking_load_kgf": 13770,
+    "heat_capacity_j_m_k": 1221.27745,
+    "emissivity": 0.5,
+    "absorptivity": 0.5,
+    "resistance": {
+      "frequency_hz": 60,
+      "r25_ohm_m": 6.95089404e-05,
+      "r75_ohm_m": 8.32383444e-05,
+      "r200_ohm_m": 0.0001175618544,
+      "status": "provisional_estimate_not_manufacturer_ac_data"
+    },
+    "sources": [
+      {
+        "title": "일진전기 중저압 케이블 카탈로그, 인쇄 16쪽 ASCC/TW 430",
+        "url": "https://www.iljinelectric.com/assets/files/pdf/distribution_cable_kr.pdf",
+        "fields": "diameter, areas, core diameter, total mass, breaking load, maximum resistance at 20°C = 0.0668 ohm/km"
+      },
+      {
+        "title": "IEEE 738-2023, Table 7 / equation 34",
+        "fields": "aluminum specific heat = 955 J/(kg K); component heat capacities are added"
+      }
+    ],
+    "assumptions": [
+      "제주 설치 제품의 제조사·코어 등급과 동일하다는 확인은 하지 않음.",
+      "60 Hz AC 저항 3점은 제조사값 미확보. 20°C 카탈로그값 × [1 + 0.00403 × (T-20)] × 1.02로 임시 추정. 온도계수·AC 보정계수는 교체 대상.",
+      "열용량 임시 추정: Al 질량 = 425.7e-6 m² × 2700 kg/m³ = 1.14939 kg/m. 나머지 0.12361 kg/m를 코어로 간주. Al Cp=955, 코어 Cp=1000 J/(kg K)는 미확인 임시값. 연선 피치 보정 생략.",
+      "방사율·흡수율 0.5는 예제 가정이며 표면 실측값 아님. 단면 내 온도는 동일하다고 가정."
+    ]
+  },
+  "spans": [
+    {
+      "id": "span-01",
+      "name": "예제 경간 A",
+      "azimuth_deg": 90,
+      "latitude_deg": 33.4,
+      "longitude_deg": 126.5,
+      "elevation_m": 100,
+      "initial_temperature_c": 45
+    },
+    {
+      "id": "span-02",
+      "name": "예제 경간 B",
+      "azimuth_deg": 35,
+      "latitude_deg": 33.4,
+      "longitude_deg": 126.51,
+      "elevation_m": 150,
+      "initial_temperature_c": 45
+    }
+  ],
+  "operation": {
+    "slr_current_a": 600,
+    "max_search_current_a": 1800,
+    "current_tolerance_a": 1,
+    "integration_step_seconds": 10
+  },
+  "risk_limits": {
+    "tmax_c": 120,
+    "max_tmax_probability": 0.05,
+    "degradation_quantile": 0.95,
+    "max_additional_degradation": 0.5
+  },
+  "degradation": {
+    "model": "arrhenius_equivalent_hours",
+    "reference_temperature_c": 100,
+    "activation_energy_j_mol": 80000,
+    "unit": "equivalent_hours",
+    "status": "provisional_uncalibrated",
+    "label": "임시 모델 기반 추가 열노화 지표",
+    "note": "활성화에너지 80 kJ/mol 및 기준온도 100°C는 실행 예제용 가정. ASCC/TW 시험자료로 보정된 값이 아니며 강도손실률·수명손실률로 변환하지 않음. IEEE 1283 Annex C 직접 적용 아님."
+  },
+  "assumptions": [
+    "경간 위치·방향·초기온도는 예제값이며 실제 선로 제원 아님.",
+    "SLR 600 A는 비교 실행용 입력이며 한전 공인 SLR 또는 제조사 정격 아님.",
+    "Tmax·허용 초과확률·열화 분위수·열화 한계는 임시 운영설정.",
+    "선로 위험은 시나리오별 어느 경간/시간에서든 Tmax 초과, 추가 열화는 시나리오별 경간 차이의 최댓값으로 집계."
+  ],
+  "initialization": {
+    "mode": "warmup",
+    "start_hours": 1,
+    "extension_hours": 1,
+    "max_hours": 12,
+    "low_temperature_c": 0,
+    "tolerance_c": 1
+  }
+}
