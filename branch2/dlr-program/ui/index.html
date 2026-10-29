@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>JEJU DLR | 확률 기반 송전용량 분석</title>
+  <link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="JEJU DLR 홈"><span class="brand-mark">ϟ</span><span>JEJU<span class="brand-light"> / DLR</span></span></a>
+    <div class="sidebar-caption">TRANSMISSION INTELLIGENCE</div>
+    <nav><a href="#overview" class="nav-active">◈ &nbsp; 송전용량 분석</a><a href="#risk">↗ &nbsp; 추가 열노화 위험</a><a href="#trajectories">⌁ &nbsp; 시나리오 탐색</a><a href="#configuration">⚙ &nbsp; 입력 및 설정</a></nav>
+    <div class="sidebar-bottom"><span class="live-dot"></span> LOCAL WORKSPACE<p>전남대학교 전기공학과<br>Python 해커톤 프로젝트</p><small>Branch 2 · Risk engine<br>Branch 3 · Dashboard</small></div>
+  </aside>
+  <main>
+    <header><div class="breadcrumb">제주 154 kV 가공송전선로 <span>/</span> DYNAMIC LINE RATING</div><span class="pill">연구용 프로토타입</span></header>
+    <section class="page-heading" id="overview"><div><div class="eyebrow">WEATHER → TEMPERATURE → RISK</div><h1>기상 불확실성을, 송전 여유로.</h1><p>동일한 미래 기상 시나리오에서 고정전류 DLR과 SLR 운전을 비교합니다.</p></div><button id="downloadResult" class="button secondary" disabled>결과 JSON 내보내기 ↓</button></section>
+    <div class="notice"><strong>임시 열노화 모델</strong><span>기준온도 환산시간으로 비교합니다. 실제 강도손실률이나 단선확률을 의미하지 않습니다.</span></div>
+    <section class="panel control-panel" id="configuration">
+      <div class="panel-title"><h2>분석 조건</h2><span id="inputLabel" class="subtle">입력 불러오는 중</span></div>
+      <div class="input-grid">
+        <label>기준 SLR <span>A</span><input id="slr" type="number" min="1" max="10000" step="1"></label>
+        <label>도체 최고허용온도 <span>°C</span><input id="tmax" type="number" min="-50" max="300" step="1"></label>
+        <label>Tmax 허용 초과확률 <span>%</span><input id="tmaxProbability" type="number" min="0" max="100" step="0.1"></label>
+        <label>열노화 판정 분위수 <span>%</span><input id="quantile" type="number" min="0.0001" max="100" step="any"></label>
+        <label>허용 추가 열노화 <span>환산 h</span><input id="doseLimit" type="number" min="0" step="0.01"></label>
+        <label>탐색 전류 상한 <span>A</span><input id="upperCurrent" type="number" min="1" max="10000" step="1"></label>
+      </div>
+      <div class="control-footer"><div class="file-actions"><label class="button secondary file-label">시나리오 JSON 불러오기<input id="weatherFile" type="file" accept=".json,application/json"></label><button id="resetExample" class="button quiet">예제 복원</button><button id="downloadWeather" class="button quiet">입력 예제 ↓</button></div><button id="calculate" class="button primary" disabled>DLR 계산하기 <span>→</span></button></div>
+      <details class="advanced"><summary>도체·경간·열화모델 설정 편집</summary><p>도체 교체, 초기온도, 열노화 계수 및 적분 간격은 아래 JSON에서 수정하세요. 아래 설정 적용 후 위의 빠른 설정을 사용할 수 있습니다.</p><textarea id="configEditor" spellcheck="false" aria-label="고정 데이터 JSON"></textarea><div class="file-actions"><button id="applyConfig" class="button secondary">JSON 설정 적용</button><label class="button quiet file-label">설정 파일 불러오기<input id="configFile" type="file" accept=".json,application/json"></label><button id="downloadConfig" class="button quiet">현재 설정 저장 ↓</button></div><div id="modelNote" class="subtle"></div></details>
+      <div id="message" role="status" aria-live="polite"></div>
+    </section>
+    <div id="loading" class="loading" hidden><span class="spinner"></span><div><strong>시나리오별 온도와 위험을 계산하고 있습니다.</strong><p>SLR 기준 계산 → 후보전류 UP/DOWN 탐색 · <span id="elapsed">0</span>초</p></div></div>
+    <section id="emptyState" class="empty-state"><div class="empty-icon">⌁</div><h2>미래 시나리오를 비교할 준비가 되었습니다.</h2><p>합성 예제로 먼저 실행하거나 날씨모델의 시나리오 JSON을 불러오세요.</p><div class="flow"><span>기상 시나리오 N개</span><b>→</b><span>고정전류별 온도</span><b>→</b><span>추가 열노화·Tmax</span><b>→</b><span>허용 DLR</span></div></section>
+    <div id="results" hidden>
+<section class="panel"><div class="panel-title"><h2>24시간 DLR 전망</h2><select id="hourSelect" aria-label="분석 시간 선택"></select></div><div id="hourlyChart" class="chart"></div><p>매시간 권고 DLR 전부 사용 가정 · 현재 적용은 첫 1시간 · 위험 기준은 각 1시간에 적용</p><p id="initializationNote"></p></section>
+      <div class="result-heading"><span id="resultStatus" class="pill"></span><span id="resultMeta" class="subtle"></span></div>
+      <div class="metrics">
+        <article class="metric featured"><div>선택 시간 권고 DLR <small id="dlrQualifier"></small></div><strong id="dlrValue">—</strong><span id="dlrDelta"></span></article>
+        <article class="metric"><div>기준 SLR</div><strong id="slrValue"></strong><span>동일한 기상·초기온도 적용</span></article>
+        <article class="metric"><div>Tmax 초과 경험확률</div><strong id="tmaxValue"></strong><span id="tmaxLimit"></span></article>
+        <article class="metric"><div id="doseTitle">추가 열노화 분위수</div><strong id="doseValue"></strong><span id="doseCaption"></span></article>
+      </div>
+      <section class="chart-grid" id="risk">
+        <article class="panel"><div class="panel-title"><div><div class="eyebrow">EXCEEDANCE RISK</div><h2>추가 열노화 risk curve</h2></div><label class="toggle"><input id="logScale" type="checkbox"> 로그 확률축</label></div><p class="chart-description">x 이상의 손상이 아닌, <strong>x를 초과하는</strong> 경험확률 P(ΔD &gt; x)</p><div id="riskChart" class="chart"></div><div class="quantile-explorer"><label for="exploreQuantile">원하는 분위수 확인 <span>%</span></label><input id="exploreQuantile" type="number" min="0.0001" max="100" step="0.01" value="99"><strong id="exploreValue"></strong></div><p id="sampleNote" class="footnote"></p></article>
+        <article class="panel"><div class="panel-title"><div><div class="eyebrow">CURRENT SEARCH</div><h2>전류에 따른 추가 열노화</h2></div></div><p class="chart-description">탐색 중 평가한 전류별 판정 분위수 · 점에 마우스를 올려 확인</p><div id="searchChart" class="chart"></div><div class="legend"><span class="legend-teal">추가 열노화</span><span class="legend-orange">허용 기준</span></div><p id="searchNote" class="footnote"></p></article>
+      </section>
+      <section class="panel trajectory-panel" id="trajectories"><div class="panel-title"><div><div class="eyebrow">SCENARIO TRAJECTORIES</div><h2>예측구간의 도체온도</h2></div><label class="select-label">경간 <select id="spanSelect"></select></label></div><div id="temperatureChart" class="chart wide"></div><div class="legend"><span class="legend-teal">후보전류 중앙값 / 5–95% 구간</span><span class="legend-slate">SLR 중앙값</span><span class="legend-orange">Tmax</span></div><p class="footnote">개별 trajectory 최대 12개와 구간 경계의 온도 분포를 표시합니다. 실제 Tmax 판정은 모든 적분 시점의 온도를 사용합니다.</p></section>
+      <section class="chart-grid"><article class="panel"><div class="panel-title"><h2>입력 기상 · 풍속</h2><span class="subtle">중앙값 / 표본 범위</span></div><div id="weatherChart" class="chart"></div><p class="footnote">각 입력 구간에서 일정하게 적용되는 시나리오 풍속입니다.</p></article><article class="panel"><div class="panel-title"><h2>병목과 위험 시간</h2></div><div class="detail-rows" id="peakDetails"></div><div class="table-wrap"><table><thead><tr><th>경간</th><th>최고온도</th><th>Tmax 확률</th><th>추가 열노화 q</th></tr></thead><tbody id="spanRows"></tbody></table></div></article></section>
+      <details class="panel"><summary>계산 가정과 결과 해석</summary><ul id="warnings"></ul><div id="provenance" class="footnote"></div></details>
+    </div>
+    <footer>JEJU DLR <span>확률모델과 물리모델을 연결하는 송전용량 분석</span><span>IEEE 738-2023 · 임시 열노화 모듈</span></footer>
+  </main>
+</body>
+</html>
